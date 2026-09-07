@@ -4,7 +4,7 @@ Vue 3 + Vite play view at `/play`. Install with `--legacy-peer-deps`.
 
 ## Product
 
-Tetrachord training: two schemes joined by ТС make a лад. Colors: tone yellow, semitone green, ТС gray.
+Tetrachord training: two schemes joined by ТС make a лад. Colors: tone green, semitone yellow, ТС gray. Practice schemes: **S1** TTS, **S2** TST, **S3** STT. Combo like `S1 + S3` sits above the card.
 
 ## Play audio
 

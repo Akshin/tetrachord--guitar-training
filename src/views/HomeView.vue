@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { PhArrowUpRight, PhGuitar, PhTextT } from '@phosphor-icons/vue'
-import IntervalScheme, { type IntervalKind } from '@/components/IntervalScheme.vue'
+import IntervalScheme from '@/components/IntervalScheme.vue'
 import ModeScheme from '@/components/ModeScheme.vue'
 import {
   namedModeTitle,
@@ -10,13 +10,18 @@ import {
   SCHEME_TST,
   SCHEME_TTS,
 } from '@/training/modes'
-import { CHANGE_EVERY_DEFAULT, type SchemePattern } from '@/training/patterns'
+import {
+  CHANGE_EVERY_DEFAULT,
+  modeSchemeCombo,
+  schemeId,
+  type SchemePattern,
+} from '@/training/patterns'
 import { BEATS_DEFAULT, BPM_DEFAULT, secondsPerBeat } from '@/audio/metronome'
 
-const positions: { title: string; pattern: IntervalKind[] }[] = [
-  { title: 'Тон — тон — полутон', pattern: [...SCHEME_TTS] },
-  { title: 'Тон — полутон — тон', pattern: [...SCHEME_TST] },
-  { title: 'Полутон — тон — тон', pattern: [...SCHEME_STT] },
+const positions: { title: string; pattern: SchemePattern }[] = [
+  { title: 'Тон — тон — полутон', pattern: SCHEME_TTS },
+  { title: 'Тон — полутон — тон', pattern: SCHEME_TST },
+  { title: 'Полутон — тон — тон', pattern: SCHEME_STT },
 ]
 
 const ionian = PRACTICABLE_MODES.find((entry) => entry.id === 'ionian')!
@@ -105,8 +110,8 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
           <div>
             <h3>Играй левую карточку от тоники</h3>
             <p>
-              Жёлтый — тон (два лада). Зелёный — полутон (соседний лад). Серый ТС — тон между двумя
-              схемами. Схему можно вести вверх и вниз.
+              Зелёный — тон (два лада). Жёлтый — полутон (соседний лад). Серый ТС — тон между двумя
+              схемами. Над карточкой — пара схем, например S1 + S3. Схему можно вести вверх и вниз.
             </p>
           </div>
         </li>
@@ -128,7 +133,7 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
       <h2>Что ты видишь на карточке</h2>
       <p>
         Тетрахорд — четыре ступени в пределах чистой кварты. Лад в игре — две такие схемы, склеенные
-        серым тоном связующим. Получается восемь нот, октава.
+        серым тоном связующим. Получается восемь нот, октава. Над карточкой стоит пара вроде S1 + S1.
       </p>
       <div class="lad">
         <ModeScheme :mode="ionian.mode" :motion="false" tab-instrument="off" />
@@ -154,11 +159,11 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
       <dl class="legend__row">
         <div>
           <dt><span class="swatch swatch--tone" /> Тон</dt>
-          <dd>Жёлтый · два полутона, на гитаре через лад</dd>
+          <dd>Зелёный · два полутона, на гитаре через лад</dd>
         </div>
         <div>
           <dt><span class="swatch swatch--semi" /> Полутон</dt>
-          <dd>Зелёный · соседний лад</dd>
+          <dd>Жёлтый · соседний лад</dd>
         </div>
         <div>
           <dt><span class="swatch swatch--tc" /> Тон связующий</dt>
@@ -170,14 +175,14 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
     <section id="positions" class="positions">
       <h2>Три схемы</h2>
       <p class="positions__lead">
-        В тренировке только эти три. Их пары через ТС и есть случайная выдача.
+        В тренировке только эти три: S1, S2, S3. Их пары через ТС и есть случайная выдача.
       </p>
       <ol class="positions__list">
-        <li v-for="(pos, i) in positions" :key="pos.title" class="pos">
-          <span class="pos__n">{{ i + 1 }}</span>
+        <li v-for="pos in positions" :key="pos.title" class="pos">
+          <span class="pos__n">{{ schemeId(pos.pattern) }}</span>
           <div class="pos__body">
             <h3>{{ pos.title }}</h3>
-            <IntervalScheme :pattern="pos.pattern" />
+            <IntervalScheme :pattern="[...pos.pattern]" />
           </div>
         </li>
       </ol>
@@ -186,13 +191,16 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
     <section class="names">
       <h2>Когда у лада есть имя</h2>
       <p>
-        Если пара схем совпадает с диатоническим ладом, под карточкой пишется название. Остальные
-        комбинации безымянные — их всё равно играют.
+        Если пара схем совпадает с диатоническим ладом, под карточкой пишется название. Над карточкой
+        всегда комбинация схем, например S1 + S1. Остальные комбинации безымянные — их всё равно
+        играют.
       </p>
       <ul class="names__list">
         <li v-for="entry in PRACTICABLE_MODES" :key="entry.id">
           <strong>{{ namedModeTitle(entry) }}</strong>
           <span>
+            {{ modeSchemeCombo(entry.mode) }}
+            ·
             {{ schemeName(entry.mode.first) }}
             · ТС ·
             {{ schemeName(entry.mode.second) }}
@@ -388,7 +396,7 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
 }
 
 .bezel__core--preview {
-  padding: 1rem 0.55rem 2.4rem;
+  padding: 2.15rem 0.55rem 2.4rem;
 }
 
 .preview {
@@ -509,6 +517,7 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
   display: flex;
   justify-content: flex-start;
   margin-top: 2rem;
+  padding-top: 1.8rem;
   padding-bottom: 2.4rem;
   max-width: 32rem;
 }
@@ -602,12 +611,14 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
 .pos__n {
   display: grid;
   place-items: center;
-  width: 2.4rem;
+  min-width: 2.6rem;
   height: 2.4rem;
+  padding: 0 0.4rem;
   border-radius: 0.7rem;
   background: var(--bg-inset);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .pos h3 {

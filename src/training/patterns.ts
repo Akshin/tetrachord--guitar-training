@@ -51,6 +51,22 @@ export function intervalLabel(kind: IntervalKind): string {
   return 'Тон'
 }
 
+export const SCHEME_IDS = ['S1', 'S2', 'S3'] as const
+export type SchemeId = (typeof SCHEME_IDS)[number]
+
+export function schemeId(pattern: SchemePattern): SchemeId | null {
+  const index = SCHEME_PATTERNS.findIndex((entry) => samePattern(entry, pattern))
+  if (index === -1) return null
+  return SCHEME_IDS[index] ?? null
+}
+
+export function modeSchemeCombo(mode: ModePattern): string | null {
+  const first = schemeId(mode.first)
+  const second = schemeId(mode.second)
+  if (!first || !second) return null
+  return `${first} + ${second}`
+}
+
 export function schemeLabel(pattern: SchemePattern): string {
   return pattern.map((kind) => intervalLabel(kind)).join(', ')
 }

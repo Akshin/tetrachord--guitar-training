@@ -4,7 +4,7 @@ import SchemeCircle from '@/components/SchemeCircle.vue'
 import PianoHelper from '@/components/PianoHelper.vue'
 import TabHelper from '@/components/TabHelper.vue'
 import { findNamedMode, namedModeTitle } from '@/training/modes'
-import { modeLabel, type ModePattern, type SchemePattern } from '@/training/patterns'
+import { modeLabel, modeSchemeCombo, type ModePattern, type SchemePattern } from '@/training/patterns'
 import { TAB_INSTRUMENT_DEFAULT, type TabInstrument } from '@/training/tabs'
 
 const props = withDefaults(
@@ -30,8 +30,10 @@ const props = withDefaults(
 
 const named = computed(() => findNamedMode(props.mode))
 const namedTitle = computed(() => (named.value ? namedModeTitle(named.value) : null))
+const combo = computed(() => modeSchemeCombo(props.mode))
 const cardLabel = computed(() => {
   const bits = [
+    combo.value,
     props.captionCount && props.caption ? `через ${props.caption}` : props.caption,
     modeLabel(props.mode),
     props.showModeName ? namedTitle.value : null,
@@ -54,6 +56,8 @@ function schemeKey(pattern: SchemePattern, side: string): string {
     }"
     :aria-label="cardLabel"
   >
+    <div class="mode__face">
+    <p v-if="combo" class="mode__combo">{{ combo }}</p>
     <div class="mode__shell">
       <div class="mode__core">
         <p v-if="caption" class="mode__caption" :class="{ 'mode__caption--count': captionCount }">
@@ -77,6 +81,7 @@ function schemeKey(pattern: SchemePattern, side: string): string {
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <PianoHelper v-if="tabInstrument === 'piano'" class="mode__tab" :mode="mode" />
@@ -121,6 +126,30 @@ function schemeKey(pattern: SchemePattern, side: string): string {
     0 0 0 2px #0b0d11,
     0 18px 38px rgb(8 10 14 / 58%),
     inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.mode__face {
+  position: relative;
+}
+
+.mode__combo {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin: 0 0 0.4rem;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.mode--quiet .mode__combo {
+  color: var(--muted);
 }
 
 .mode__shell {
