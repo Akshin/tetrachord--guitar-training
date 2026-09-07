@@ -1,5 +1,6 @@
 export type IntervalKind = 'tone' | 'semitone' | 'tc'
 
+/** Three intervals of a tetrachord (or Lydian T–T–T). */
 export type SchemePattern = readonly [IntervalKind, IntervalKind, IntervalKind]
 
 /** A mode (лад) is two tetrachord schemes joined by a connecting tone (ТС). */

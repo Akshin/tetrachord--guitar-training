@@ -38,9 +38,9 @@ export async function unlockAudio(): Promise<AudioContext> {
 /** Notes played evenly across one bar. */
 export const MELODY_NOTES_PER_BAR = 8
 
-/** Sweet-spot range: C4–A5. */
+/** Sweet-spot range: C4–B5, so a full octave from any chosen key still fits. */
 export const MELODY_MIN_MIDI = 60
-export const MELODY_MAX_MIDI = 81
+export const MELODY_MAX_MIDI = 83
 /** E4: sits well on guitar and in the middle of the range. */
 export const MELODY_ROOT_MIDI = 64
 
@@ -61,10 +61,10 @@ function tetrachordPitches(start: number, pattern: SchemePattern): number[] {
 function fitPleasantRange(notes: number[]): number[] {
   if (notes.length === 0) return notes
   let shifted = [...notes]
-  while (Math.max(...shifted) > MELODY_MAX_MIDI) {
+  for (let i = 0; i < 8 && Math.max(...shifted) > MELODY_MAX_MIDI; i++) {
     shifted = shifted.map((n) => n - 12)
   }
-  while (Math.min(...shifted) < MELODY_MIN_MIDI) {
+  for (let i = 0; i < 8 && Math.min(...shifted) < MELODY_MIN_MIDI; i++) {
     shifted = shifted.map((n) => n + 12)
   }
   return shifted
@@ -82,6 +82,8 @@ export type MelodyBarOptions = {
   mode: ModePattern
   bpm: number
   beatsPerMeasure: number
+  /** MIDI root of the selected key. Defaults to E4. */
+  root?: number
   /** Absolute AudioContext time of the downbeat click. */
   when: number
 }
@@ -106,7 +108,7 @@ export class MelodyVoice {
   playBar(options: MelodyBarOptions): void {
     if (!this.alive || !this.synth) return
 
-    const midiNotes = modeToMidiNotes(options.mode)
+    const midiNotes = modeToMidiNotes(options.mode, options.root ?? MELODY_ROOT_MIDI)
     if (midiNotes.length === 0) return
 
     const barSec = secondsPerBeat(options.bpm) * options.beatsPerMeasure

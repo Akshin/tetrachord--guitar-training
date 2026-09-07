@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { PhPlay, PhStop } from '@phosphor-icons/vue'
+import { backingTrack } from '@/audio/backingTrack'
 import { melodyVoice, unlockAudio } from '@/audio/melody'
 import {
   BEATS_DEFAULT,
@@ -15,11 +16,13 @@ const props = withDefaults(
     modelValue?: boolean
     bpm?: number
     beatsPerMeasure?: number
+    clicks?: boolean
   }>(),
   {
     modelValue: false,
     bpm: BPM_DEFAULT,
     beatsPerMeasure: BEATS_DEFAULT,
+    clicks: true,
   },
 )
 
@@ -59,8 +62,10 @@ async function play() {
     emit('update:modelValue', true)
     await nextTick()
     await metronome.start(ctx)
+    backingTrack.setSession(true)
   } catch {
     melodyVoice.silence()
+    backingTrack.setSession(false)
     metronome.stop()
     playing.value = false
     emit('update:modelValue', false)
@@ -70,6 +75,7 @@ async function play() {
 function stop() {
   if (!playing.value) return
   melodyVoice.silence()
+  backingTrack.setSession(false)
   metronome.stop()
   playing.value = false
   emit('update:modelValue', false)
@@ -80,6 +86,7 @@ watch(
   (on) => {
     if (!on) {
       melodyVoice.silence()
+      backingTrack.setSession(false)
       metronome.stop()
     }
   },
@@ -97,6 +104,14 @@ watch(
   (beats) => {
     metronome.setBeatsPerMeasure(beats)
   },
+)
+
+watch(
+  () => props.clicks,
+  (on) => {
+    metronome.setClicks(on)
+  },
+  { immediate: true },
 )
 
 onUnmounted(() => {

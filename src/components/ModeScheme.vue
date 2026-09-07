@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import SchemeCircle from '@/components/SchemeCircle.vue'
+import { findNamedMode, namedModeTitle } from '@/training/modes'
 import { modeLabel, type ModePattern, type SchemePattern } from '@/training/patterns'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     mode: ModePattern
     caption?: string
@@ -10,11 +12,17 @@ withDefaults(
     lifted?: boolean
     /** When false, transform/opacity are driven by the parent stage only. */
     motion?: boolean
+    /** Show diatonic mode name under the card when the pair matches. */
+    showModeName?: boolean
   }>(),
   {
     motion: true,
+    showModeName: true,
   },
 )
+
+const named = computed(() => findNamedMode(props.mode))
+const namedTitle = computed(() => (named.value ? namedModeTitle(named.value) : null))
 
 function schemeKey(pattern: SchemePattern, side: string): string {
   return `${side}-${pattern.join('-')}`
@@ -29,7 +37,7 @@ function schemeKey(pattern: SchemePattern, side: string): string {
       'mode--lifted': lifted,
       'mode--static': !motion,
     }"
-    :aria-label="modeLabel(mode)"
+    :aria-label="namedTitle ? `${modeLabel(mode)}. ${namedTitle}` : modeLabel(mode)"
   >
     <div class="mode__shell">
       <div class="mode__core">
@@ -53,6 +61,8 @@ function schemeKey(pattern: SchemePattern, side: string): string {
         </div>
       </div>
     </div>
+
+    <p v-if="showModeName && namedTitle" class="mode__name">{{ namedTitle }}</p>
   </article>
 </template>
 
@@ -155,6 +165,20 @@ function schemeKey(pattern: SchemePattern, side: string): string {
   flex: none;
   place-items: center;
   width: 1.7rem;
+}
+
+.mode__name {
+  margin: 0.65rem 0 0;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.mode--quiet .mode__name {
+  color: var(--muted);
 }
 
 @media (max-width: 767px) {

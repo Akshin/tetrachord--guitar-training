@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { backingTrack, midiRootForKey, TRACK_KEY_DEFAULT, type TrackKey } from '@/audio/backingTrack'
 import { melodyVoice } from '@/audio/melody'
 import type { BeatEvent } from '@/audio/metronome'
+import BackingTrackToggle from '@/components/BackingTrackToggle.vue'
 import BpmControl from '@/components/BpmControl.vue'
+import KeyControl from '@/components/KeyControl.vue'
 import MelodyToggle from '@/components/MelodyToggle.vue'
+import MetronomeToggle from '@/components/MetronomeToggle.vue'
 import PlayTransport from '@/components/PlayTransport.vue'
 import SchemeChangeControl from '@/components/SchemeChangeControl.vue'
 import TimeSignatureControl from '@/components/TimeSignatureControl.vue'
@@ -16,12 +20,18 @@ const store = useMetronomeStore()
 const { bpm, beatsPerMeasure } = storeToRefs(store)
 const playing = ref(false)
 const melodyOn = ref(true)
+const metronomeOn = ref(true)
+const backingOn = ref(false)
+const trackKey = ref<TrackKey>(TRACK_KEY_DEFAULT)
 const changeEvery = ref<ChangeEvery>(CHANGE_EVERY_DEFAULT)
 const downbeatSeq = ref(0)
 const soundingMode = ref<ModePattern | null>(null)
 
 watch(playing, (on) => {
-  if (!on) melodyVoice.silence()
+  if (!on) {
+    melodyVoice.silence()
+    backingTrack.setSession(false)
+  }
 })
 
 watch(melodyOn, async (on) => {
@@ -30,6 +40,14 @@ watch(melodyOn, async (on) => {
     return
   }
   if (playing.value) await melodyVoice.ready()
+})
+
+watch(backingOn, (on) => {
+  backingTrack.setEnabled(on)
+})
+
+watch(trackKey, (key) => {
+  backingTrack.setKey(key)
 })
 
 function onDownbeat() {
@@ -43,12 +61,14 @@ function onScheduleDownbeat(event: BeatEvent) {
     mode,
     bpm: bpm.value,
     beatsPerMeasure: beatsPerMeasure.value,
+    root: midiRootForKey(trackKey.value),
     when: event.audioTime,
   })
 }
 
 onUnmounted(() => {
   melodyVoice.dispose()
+  backingTrack.dispose()
 })
 </script>
 
@@ -66,11 +86,15 @@ onUnmounted(() => {
       <BpmControl v-model="bpm" />
       <TimeSignatureControl v-model="beatsPerMeasure" />
       <SchemeChangeControl v-model="changeEvery" />
+      <MetronomeToggle v-model="metronomeOn" />
       <MelodyToggle v-model="melodyOn" />
+      <BackingTrackToggle v-model="backingOn" />
+      <KeyControl v-model="trackKey" />
       <PlayTransport
         v-model="playing"
         :bpm="bpm"
         :beats-per-measure="beatsPerMeasure"
+        :clicks="metronomeOn"
         @downbeat="onDownbeat"
         @schedule-downbeat="onScheduleDownbeat"
       />

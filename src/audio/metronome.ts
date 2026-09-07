@@ -69,6 +69,7 @@ export class Metronome {
   private _bpm: number
   private _beatsPerMeasure: number
   private _running = false
+  private _clicks = true
   private onBeat: ((event: BeatEvent) => void) | null
   private onSchedule: ((event: BeatEvent) => void) | null
   private beatTimers: number[] = []
@@ -95,6 +96,14 @@ export class Metronome {
 
   get running(): boolean {
     return this._running
+  }
+
+  get clicks(): boolean {
+    return this._clicks
+  }
+
+  setClicks(on: boolean): void {
+    this._clicks = on
   }
 
   setBpm(bpm: number): void {
@@ -258,7 +267,7 @@ export class Metronome {
     while (this.nextNoteTime < ctx.currentTime + SCHEDULE_AHEAD_S) {
       const beatInMeasure = this.beatCount % this._beatsPerMeasure
       const accent = beatInMeasure === 0
-      this.playClick(this.nextNoteTime, accent)
+      if (this._clicks) this.playClick(this.nextNoteTime, accent)
       const event: BeatEvent = {
         audioTime: this.nextNoteTime,
         isDownbeat: accent,
