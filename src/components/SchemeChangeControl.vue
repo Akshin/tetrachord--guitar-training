@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { PhCaretDown } from '@phosphor-icons/vue'
+import { PhArrowsClockwise, PhCaretDown } from '@phosphor-icons/vue'
 import {
   CHANGE_EVERY_DEFAULT,
   CHANGE_EVERY_OPTIONS,
@@ -119,7 +119,10 @@ onUnmounted(() => {
 
 <template>
   <div ref="rootRef" class="change" @keydown="onKeydown">
-    <span class="change__label" id="change-label">Смена схемы</span>
+    <span class="change__label ctrl-title" id="change-label">
+      <PhArrowsClockwise :size="14" weight="light" aria-hidden="true" />
+      Смена схемы
+    </span>
     <button
       type="button"
       class="change__trigger"
@@ -170,24 +173,19 @@ onUnmounted(() => {
   z-index: 15;
 }
 
-.change__label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .change__trigger {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  min-width: 10.5rem;
+  min-width: 11.25rem;
   height: 2.75rem;
   padding: 0 0.45rem 0 1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-inset) 62%, transparent);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 8%),
+    inset 0 -1px 0 rgb(8 10 14 / 12%);
   color: var(--ink);
   cursor: pointer;
   transition:
@@ -237,6 +235,7 @@ onUnmounted(() => {
   right: 0;
   bottom: calc(100% + 0.45rem);
   left: 0;
+  z-index: 20;
   margin: 0;
   padding: 0.35rem;
   list-style: none;

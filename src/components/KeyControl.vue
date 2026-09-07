@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { PhMusicNote } from '@phosphor-icons/vue'
 import { TRACK_KEYS, TRACK_KEY_DEFAULT, type TrackKey } from '@/audio/backingTrack'
 
 const props = withDefaults(
   defineProps<{
     modelValue?: TrackKey
+    hideLabel?: boolean
   }>(),
   {
     modelValue: TRACK_KEY_DEFAULT,
+    hideLabel: false,
   },
 )
 
@@ -32,9 +35,17 @@ function select(next: TrackKey) {
 </script>
 
 <template>
-  <div class="key" role="group" aria-label="Тональность">
-    <span class="key__label" id="key-label">Тональность</span>
-    <div class="key__options" role="radiogroup" aria-labelledby="key-label">
+  <div class="key" role="group" aria-label="Тональный центр">
+    <span v-if="!hideLabel" class="key__label ctrl-title" id="key-label">
+      <PhMusicNote :size="14" weight="light" aria-hidden="true" />
+      Тональный центр
+    </span>
+    <div
+      class="key__options"
+      role="radiogroup"
+      :aria-labelledby="hideLabel ? undefined : 'key-label'"
+      :aria-label="hideLabel ? 'Тональный центр' : undefined"
+    >
       <button
         v-for="option in TRACK_KEYS"
         :key="option"
@@ -43,7 +54,7 @@ function select(next: TrackKey) {
         :class="{ 'key__opt--on': key === option }"
         role="radio"
         :aria-checked="key === option"
-        :aria-label="`Тональность ${option}`"
+        :aria-label="`Тональный центр ${option}`"
         @click="select(option)"
       >
         {{ option }}
@@ -61,24 +72,19 @@ function select(next: TrackKey) {
   width: max-content;
 }
 
-.key__label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .key__options {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.3rem;
-  max-width: 22rem;
+  max-width: 19rem;
   padding: 0.3rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-inset) 62%, transparent);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 8%),
+    inset 0 -1px 0 rgb(8 10 14 / 12%);
 }
 
 .key__opt {

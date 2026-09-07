@@ -17,7 +17,7 @@ export const TRACK_KEYS = [
 
 export type TrackKey = (typeof TRACK_KEYS)[number]
 
-export const TRACK_KEY_DEFAULT: TrackKey = 'E'
+export const TRACK_KEY_DEFAULT: TrackKey = 'A'
 
 /** C4 plus the pitch class of the chosen key. */
 export function midiRootForKey(key: TrackKey): number {

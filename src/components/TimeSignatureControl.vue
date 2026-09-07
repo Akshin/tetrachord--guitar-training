@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { PhTimer } from '@phosphor-icons/vue'
 import { BEATS_DEFAULT, TIME_SIGNATURES, clampBeats } from '@/audio/metronome'
 
 const props = withDefaults(
   defineProps<{
     modelValue?: number
+    hideLabel?: boolean
   }>(),
   {
     modelValue: BEATS_DEFAULT,
+    hideLabel: false,
   },
 )
 
@@ -35,8 +38,16 @@ function select(next: number) {
 
 <template>
   <div class="meter" role="group" aria-label="Размер такта">
-    <span class="meter__label" id="meter-label">Размер</span>
-    <div class="meter__options" role="radiogroup" aria-labelledby="meter-label">
+    <span v-if="!hideLabel" class="meter__label ctrl-title" id="meter-label">
+      <PhTimer :size="14" weight="light" aria-hidden="true" />
+      Размер
+    </span>
+    <div
+      class="meter__options"
+      role="radiogroup"
+      :aria-labelledby="hideLabel ? undefined : 'meter-label'"
+      :aria-label="hideLabel ? 'Размер такта' : undefined"
+    >
       <button
         v-for="option in TIME_SIGNATURES"
         :key="option.label"
@@ -62,14 +73,6 @@ function select(next: number) {
   width: max-content;
 }
 
-.meter__label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .meter__options {
   display: flex;
   flex-wrap: wrap;
@@ -78,13 +81,16 @@ function select(next: number) {
   padding: 0.3rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-inset) 62%, transparent);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 8%),
+    inset 0 -1px 0 rgb(8 10 14 / 12%);
 }
 
 .meter__opt {
-  min-width: 2.65rem;
+  min-width: 2.35rem;
   height: 2.15rem;
-  padding: 0 0.65rem;
+  padding: 0 0.5rem;
   border: 1px solid transparent;
   border-radius: var(--radius-pill);
   background: transparent;

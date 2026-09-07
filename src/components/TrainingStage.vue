@@ -2,10 +2,11 @@
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import ModeScheme from '@/components/ModeScheme.vue'
 import {
-  randomMode,
-  type ChangeEvery,
-  type ModePattern,
-} from '@/training/patterns'
+  BEATS_DEFAULT,
+  BPM_DEFAULT,
+  secondsPerBeat,
+} from '@/audio/metronome'
+import { randomMode, type ChangeEvery, type ModePattern } from '@/training/patterns'
 import { TAB_INSTRUMENT_DEFAULT, type TabInstrument } from '@/training/tabs'
 
 const props = withDefaults(
@@ -14,9 +15,15 @@ const props = withDefaults(
     changeEvery: ChangeEvery
     downbeatSeq: number
     tabInstrument?: TabInstrument
+    showModeName?: boolean
+    bpm?: number
+    beatsPerMeasure?: number
   }>(),
   {
     tabInstrument: TAB_INSTRUMENT_DEFAULT,
+    showModeName: true,
+    bpm: BPM_DEFAULT,
+    beatsPerMeasure: BEATS_DEFAULT,
   },
 )
 
@@ -40,7 +47,6 @@ const next = ref<Slot>(makeSlot(current.value.mode))
 const flyer = ref<ModePattern | null>(null)
 const flyerPhase = ref<'start' | 'lift' | 'go' | 'settle'>('start')
 const sliding = ref(false)
-const leftSnap = ref(false)
 const armed = ref(true)
 const completedMeasures = ref(0)
 const pendingAdvance = ref(false)
@@ -56,6 +62,45 @@ const FALL_LEAD_MS = 420
 const leftMode = computed(() => current.value.mode)
 const rightMode = computed(() => next.value.mode)
 
+const clock = ref(0)
+let lastDownbeatAt = 0
+let rafId = 0
+
+function measureSeconds(): number {
+  return secondsPerBeat(props.bpm) * props.beatsPerMeasure
+}
+
+function measuresUntilChange(): number {
+  if (!props.playing || armed.value) return props.changeEvery
+  const intoCycle = completedMeasures.value % props.changeEvery
+  return props.changeEvery - intoCycle
+}
+
+function remainingSeconds(): number {
+  const bar = measureSeconds()
+  const bars = measuresUntilChange()
+  if (!props.playing || armed.value || lastDownbeatAt === 0) return bars * bar
+  const elapsed = (performance.now() - lastDownbeatAt) / 1000
+  return Math.max(0, bars * bar - elapsed)
+}
+
+const nextCaption = computed(() => {
+  void clock.value
+  return `${remainingSeconds().toFixed(1)} с`
+})
+
+function stopClock() {
+  if (rafId !== 0) {
+    cancelAnimationFrame(rafId)
+    rafId = 0
+  }
+}
+
+function tickClock() {
+  clock.value = performance.now()
+  rafId = requestAnimationFrame(tickClock)
+}
+
 function clearTimers() {
   while (timers.length > 0) {
     const id = timers.pop()
@@ -70,7 +115,6 @@ function after(ms: number, fn: () => void) {
 function resetPair() {
   clearTimers()
   sliding.value = false
-  leftSnap.value = false
   flyerPhase.value = 'start'
   flyer.value = null
   pendingAdvance.value = false
@@ -85,15 +129,20 @@ watch(
     if (on && !wasOn) {
       lastDownbeatSeq = props.downbeatSeq
       armed.value = true
+      lastDownbeatAt = 0
       resetPair()
+      stopClock()
+      tickClock()
     }
     if (!on) {
       completedMeasures.value = 0
       pendingAdvance.value = false
       armed.value = true
+      lastDownbeatAt = 0
+      stopClock()
+      clock.value = 0
       clearTimers()
       sliding.value = false
-      leftSnap.value = false
       flyerPhase.value = 'start'
       flyer.value = null
     }
@@ -114,16 +163,14 @@ function swapInstant() {
 }
 
 function finishSlide(moving: Slot) {
-  // Swap content while left is still hidden, drop flyer, then snap left in
-  // without a fade-in (that fade was the flicker).
   current.value = moving
-  flyer.value = null
-  flyerPhase.value = 'start'
-  leftSnap.value = true
   sliding.value = false
+  // Keep the flyer covering the left slot for one frame so the seated card
+  // is already opaque when the overlay drops. No fade-in.
   void nextTick(() => {
     requestAnimationFrame(() => {
-      leftSnap.value = false
+      flyer.value = null
+      flyerPhase.value = 'start'
       if (pendingAdvance.value) {
         pendingAdvance.value = false
         advance()
@@ -176,6 +223,7 @@ watch(
     }
     if (seq === lastDownbeatSeq) return
     lastDownbeatSeq = seq
+    lastDownbeatAt = performance.now()
     if (armed.value) {
       armed.value = false
       return
@@ -186,8 +234,7 @@ watch(
 )
 
 const upcomingMode = computed(() => {
-  const nextBarAdvances =
-    !armed.value && (completedMeasures.value + 1) % props.changeEvery === 0
+  const nextBarAdvances = !armed.value && (completedMeasures.value + 1) % props.changeEvery === 0
   return nextBarAdvances ? next.value.mode : current.value.mode
 })
 
@@ -201,6 +248,7 @@ watch(
 
 onUnmounted(() => {
   pendingAdvance.value = false
+  stopClock()
   clearTimers()
 })
 </script>
@@ -210,27 +258,24 @@ onUnmounted(() => {
     <div class="stage__viewport">
       <article
         class="stage__pane stage__pane--left"
-        :class="{
-          'stage__pane--exit': sliding,
-          'stage__pane--snap': leftSnap,
-        }"
+        :class="{ 'stage__pane--exit': sliding }"
       >
         <ModeScheme
           :mode="leftMode"
           caption="Сейчас"
           :motion="false"
           :tab-instrument="tabInstrument"
+          :show-mode-name="showModeName"
         />
       </article>
-      <article
-        class="stage__pane stage__pane--right"
-        :class="{ 'stage__pane--enter': sliding }"
-      >
+      <article class="stage__pane stage__pane--right" :class="{ 'stage__pane--enter': sliding }">
         <ModeScheme
           :mode="rightMode"
-          caption="Дальше"
+          :caption="nextCaption"
+          caption-count
           quiet
           :tab-instrument="tabInstrument"
+          :show-mode-name="showModeName"
         />
       </article>
 
@@ -250,6 +295,7 @@ onUnmounted(() => {
           :quiet="flyerPhase === 'start'"
           :lifted="flyerPhase === 'lift' || flyerPhase === 'go'"
           :tab-instrument="tabInstrument"
+          :show-mode-name="showModeName"
         />
       </div>
 
@@ -283,26 +329,21 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: 1.5rem 1rem;
+  padding: 2.35rem 1rem;
 }
 
 .stage__pane--left :deep(.mode) {
   opacity: 1;
   transform: none;
-  transition:
-    transform 520ms cubic-bezier(0.33, 0.08, 0.18, 1),
-    opacity 480ms cubic-bezier(0.33, 0.08, 0.18, 1);
+  transition: none;
 }
 
 .stage__pane--exit :deep(.mode) {
   opacity: 0;
   transform: scale(0.9);
-}
-
-.stage__pane--snap :deep(.mode) {
-  transition: none;
-  opacity: 1;
-  transform: none;
+  transition:
+    transform 520ms cubic-bezier(0.33, 0.08, 0.18, 1),
+    opacity 480ms cubic-bezier(0.33, 0.08, 0.18, 1);
 }
 
 .stage__pane--enter {
@@ -319,7 +360,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 50%;
-  padding: 1.5rem 1rem;
+  padding: 2.35rem 1rem;
   pointer-events: none;
   transform: translateX(0);
   transition: transform 780ms cubic-bezier(0.33, 0.08, 0.18, 1);
@@ -372,7 +413,7 @@ onUnmounted(() => {
 
   .stage__pane,
   .stage__flyer {
-    padding: 1rem 0.45rem;
+    padding: 2.1rem 0.45rem;
   }
 }
 </style>

@@ -1,7 +1,9 @@
 import {
+  Chorus,
   Filter,
   Midi,
   PolySynth,
+  Reverb,
   Synth,
   Volume,
   getContext,
@@ -89,18 +91,28 @@ export type MelodyBarOptions = {
 }
 
 /**
- * Warm triangle lead for tetrachord practice. Stays in a mid register so it
- * sits next to the wooden metronome without harsh highs.
+ * Soft lead that lives in the same hall as the strings pad:
+ * fat triangle, chorus, convolution reverb. Notes stay readable.
  */
 export class MelodyVoice {
   private synth: PolySynth<Synth> | null = null
   private filter: Filter | null = null
+  private chorus: Chorus | null = null
+  private reverb: Reverb | null = null
   private volume: Volume | null = null
+  private building: Promise<void> | null = null
   private alive = false
 
   async ready(): Promise<void> {
     await unlockAudio()
-    if (!this.synth) this.buildGraph()
+    if (!this.synth) {
+      this.building ??= this.buildGraph()
+      try {
+        await this.building
+      } finally {
+        this.building = null
+      }
+    }
     if (this.volume) this.volume.mute = false
     this.alive = true
   }
@@ -113,7 +125,7 @@ export class MelodyVoice {
 
     const barSec = secondsPerBeat(options.bpm) * options.beatsPerMeasure
     const step = barSec / MELODY_NOTES_PER_BAR
-    const dur = Math.max(0.05, step * 0.7)
+    const dur = Math.max(0.08, step * 0.84)
     const t0 = Math.max(options.when, immediate() + 0.001)
 
     this.synth.releaseAll(t0)
@@ -121,48 +133,78 @@ export class MelodyVoice {
       const midi = midiNotes[i % midiNotes.length]
       if (midi === undefined) continue
       const note = Midi(midi).toNote()
-      this.synth.triggerAttackRelease(note, dur, t0 + i * step, 0.55)
+      this.synth.triggerAttackRelease(note, dur, t0 + i * step, 0.46)
     }
   }
 
   silence(): void {
     this.alive = false
-    if (this.volume) this.volume.mute = true
     this.synth?.releaseAll()
-    this.tearDown()
+    if (this.volume) this.volume.mute = true
   }
 
   dispose(): void {
-    this.silence()
+    this.alive = false
+    this.synth?.releaseAll()
+    this.tearDown()
   }
 
   private tearDown(): void {
     this.synth?.dispose()
     this.filter?.dispose()
+    this.chorus?.dispose()
+    this.reverb?.dispose()
     this.volume?.dispose()
     this.synth = null
     this.filter = null
+    this.chorus = null
+    this.reverb = null
     this.volume = null
   }
 
-  private buildGraph(): void {
-    this.volume = new Volume(-9).toDestination()
+  private async buildGraph(): Promise<void> {
+    this.volume = new Volume(-11).toDestination()
     this.volume.mute = false
+
+    this.reverb = new Reverb({
+      decay: 2.6,
+      preDelay: 0.028,
+      wet: 0.36,
+    })
+    await this.reverb.ready
+    this.reverb.connect(this.volume)
+
+    this.chorus = new Chorus({
+      frequency: 0.65,
+      delayTime: 3.4,
+      depth: 0.32,
+      spread: 150,
+      wet: 0.22,
+    })
+    this.chorus.connect(this.reverb)
+    this.chorus.start()
+
     this.filter = new Filter({
       type: 'lowpass',
-      frequency: 2100,
-      Q: 0.4,
-    }).connect(this.volume)
+      frequency: 1760,
+      Q: 0.42,
+      rolloff: -24,
+    }).connect(this.chorus)
+
     this.synth = new PolySynth(Synth, {
-      oscillator: { type: 'triangle' },
+      oscillator: {
+        type: 'fattriangle',
+        spread: 12,
+        count: 2,
+      },
       envelope: {
-        attack: 0.014,
-        decay: 0.18,
-        sustain: 0.12,
-        release: 0.26,
+        attack: 0.04,
+        decay: 0.26,
+        sustain: 0.3,
+        release: 0.82,
       },
     }).connect(this.filter)
-    this.synth.maxPolyphony = MELODY_NOTES_PER_BAR
+    this.synth.maxPolyphony = 16
   }
 }
 

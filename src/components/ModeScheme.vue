@@ -11,6 +11,8 @@ const props = withDefaults(
   defineProps<{
     mode: ModePattern
     caption?: string
+    /** Timer captions skip uppercase so «3.4 с» stays readable. */
+    captionCount?: boolean
     quiet?: boolean
     lifted?: boolean
     /** When false, transform/opacity are driven by the parent stage only. */
@@ -28,6 +30,14 @@ const props = withDefaults(
 
 const named = computed(() => findNamedMode(props.mode))
 const namedTitle = computed(() => (named.value ? namedModeTitle(named.value) : null))
+const cardLabel = computed(() => {
+  const bits = [
+    props.captionCount && props.caption ? `через ${props.caption}` : props.caption,
+    modeLabel(props.mode),
+    props.showModeName ? namedTitle.value : null,
+  ].filter((bit): bit is string => Boolean(bit))
+  return bits.join('. ')
+})
 
 function schemeKey(pattern: SchemePattern, side: string): string {
   return `${side}-${pattern.join('-')}`
@@ -42,11 +52,13 @@ function schemeKey(pattern: SchemePattern, side: string): string {
       'mode--lifted': lifted,
       'mode--static': !motion,
     }"
-    :aria-label="namedTitle ? `${modeLabel(mode)}. ${namedTitle}` : modeLabel(mode)"
+    :aria-label="cardLabel"
   >
     <div class="mode__shell">
       <div class="mode__core">
-        <p v-if="caption" class="mode__caption">{{ caption }}</p>
+        <p v-if="caption" class="mode__caption" :class="{ 'mode__caption--count': captionCount }">
+          {{ caption }}
+        </p>
         <div class="mode__lad" aria-hidden="true">
           <div class="mode__scheme" :key="schemeKey(mode.first, 'a')">
             <span v-for="(kind, i) in mode.first" :key="`a-${kind}-${i}`" class="mode__cell">
@@ -76,6 +88,7 @@ function schemeKey(pattern: SchemePattern, side: string): string {
 
 <style scoped>
 .mode {
+  position: relative;
   width: min(30rem, 100%);
   flex: none;
   transform-origin: center center;
@@ -139,6 +152,12 @@ function schemeKey(pattern: SchemePattern, side: string): string {
   text-transform: uppercase;
 }
 
+.mode__caption--count {
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .mode__lad {
   display: flex;
   align-items: center;
@@ -185,13 +204,19 @@ function schemeKey(pattern: SchemePattern, side: string): string {
 }
 
 .mode__name {
-  margin: 0.5rem 0 0;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0.45rem 0 0;
   color: var(--ink);
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  line-height: 1.25;
   text-align: center;
   text-wrap: balance;
+  pointer-events: none;
 }
 
 .mode--quiet .mode__name {

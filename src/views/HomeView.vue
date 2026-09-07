@@ -1,27 +1,48 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { PhArrowUpRight } from '@phosphor-icons/vue'
+import { PhArrowUpRight, PhGuitar, PhTextT } from '@phosphor-icons/vue'
 import IntervalScheme, { type IntervalKind } from '@/components/IntervalScheme.vue'
+import ModeScheme from '@/components/ModeScheme.vue'
+import {
+  namedModeTitle,
+  PRACTICABLE_MODES,
+  SCHEME_STT,
+  SCHEME_TST,
+  SCHEME_TTS,
+} from '@/training/modes'
+import { CHANGE_EVERY_DEFAULT, type SchemePattern } from '@/training/patterns'
+import { BEATS_DEFAULT, BPM_DEFAULT, secondsPerBeat } from '@/audio/metronome'
 
 const positions: { title: string; pattern: IntervalKind[] }[] = [
-  { title: 'Тон, тон, полутон', pattern: ['tone', 'tone', 'semitone'] },
-  { title: 'Тон, полутон, тон', pattern: ['tone', 'semitone', 'tone'] },
-  { title: 'Полутон, тон, тон', pattern: ['semitone', 'tone', 'tone'] },
+  { title: 'Тон — тон — полутон', pattern: [...SCHEME_TTS] },
+  { title: 'Тон — полутон — тон', pattern: [...SCHEME_TST] },
+  { title: 'Полутон — тон — тон', pattern: [...SCHEME_STT] },
 ]
+
+const ionian = PRACTICABLE_MODES.find((entry) => entry.id === 'ionian')!
+const dorian = PRACTICABLE_MODES.find((entry) => entry.id === 'dorian')!
 
 const goingUp = ref(true)
 const demoPattern = computed(() =>
   goingUp.value ? positions[0]!.pattern : [...positions[0]!.pattern].reverse(),
 )
+
+function schemeName(pattern: SchemePattern): string {
+  return pattern.map((kind) => (kind === 'semitone' ? 'полутон' : 'тон')).join(' — ')
+}
+
+const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_EVERY_DEFAULT).toFixed(1)} с`
 </script>
 
 <template>
   <main id="main" class="home">
     <section class="hero">
       <div class="hero__copy">
-        <h1 class="hero__title">Тетрахорд на грифе</h1>
+        <p class="kicker">Как устроена тренировка</p>
+        <h1 class="hero__title">Две схемы, связующий тон, лад под метроном</h1>
         <p class="hero__lead">
-          Игра для тех, кто мыслит четырьмя ступенями: тон, полутон, вверх и вниз.
+          Слева играешь то, что сейчас. Справа видишь, что будет дальше. Карточка сама переезжает —
+          ты не останавливаешься.
         </p>
         <RouterLink to="/play" class="cta">
           Играть
@@ -33,46 +54,123 @@ const demoPattern = computed(() =>
 
       <div class="hero__stage">
         <div class="bezel">
-          <div class="bezel__core">
-            <p class="hero__stage-kicker">Схема 1, {{ goingUp ? 'вверх' : 'вниз' }}</p>
-            <IntervalScheme :pattern="demoPattern" />
-            <div class="hero__toggle">
-              <button
-                type="button"
-                class="dir"
-                :aria-pressed="goingUp"
-                @click="goingUp = true"
-              >
-                Вверх
-              </button>
-              <button
-                type="button"
-                class="dir"
-                :aria-pressed="!goingUp"
-                @click="goingUp = false"
-              >
-                Вниз
-              </button>
+          <div class="bezel__core bezel__core--preview">
+            <div class="preview" aria-label="Так выглядит экран игры">
+              <ModeScheme
+                :mode="ionian.mode"
+                caption="Сейчас"
+                :motion="false"
+                tab-instrument="off"
+              />
+              <div class="preview__split" aria-hidden="true" />
+              <ModeScheme
+                :mode="dorian.mode"
+                :caption="demoCountdown"
+                caption-count
+                quiet
+                :motion="false"
+                tab-instrument="off"
+              />
             </div>
           </div>
         </div>
       </div>
     </section>
 
+    <section class="session">
+      <h2>Как тренироваться</h2>
+      <ol class="steps">
+        <li>
+          <span class="steps__n">1</span>
+          <div>
+            <h3>Открой игру</h3>
+            <p>
+              Слева карточка «Сейчас», справа следующий лад и секунды до смены. Это один лад и
+              следующий.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="steps__n">2</span>
+          <div>
+            <h3>Поставь тональность и Play</h3>
+            <p>
+              Метроном лучше не выключать. Мелодия за такт проходит все восемь нот лада — по ней
+              слышно, что показывать на грифе. Бэк-трек по желанию.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="steps__n">3</span>
+          <div>
+            <h3>Играй левую карточку от тоники</h3>
+            <p>
+              Жёлтый — тон (два лада). Зелёный — полутон (соседний лад). Серый ТС — тон между двумя
+              схемами. Схему можно вести вверх и вниз.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="steps__n">4</span>
+          <div>
+            <h3>Не стой, когда карточка уезжает</h3>
+            <p>
+              Правая карточка переезжает налево. Смену можно разредить: раз в такт или раз в несколько
+              тактов — таймер справа пересчитается. Если гриф не читается — включи табы гитары
+              (лады 1–4) или пианино.
+            </p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
     <section class="define">
-      <h2>Что такое тетрахорд</h2>
+      <h2>Что ты видишь на карточке</h2>
       <p>
-        Тетрахорд - звукоряд из четырёх последовательных ступеней, охватывающий интервал
-        чистой кварты. Исторически из него собирали лады и гаммы: в греческой музыке, в
-        народных традициях, и сейчас на грифе.
+        Тетрахорд — четыре ступени в пределах чистой кварты. Лад в игре — две такие схемы, склеенные
+        серым тоном связующим. Получается восемь нот, октава.
       </p>
+      <div class="lad">
+        <ModeScheme :mode="ionian.mode" :motion="false" tab-instrument="off" />
+      </div>
+      <aside class="hint">
+        <div class="hint__core">
+          <div class="hint__sw" aria-hidden="true">
+            <span class="hint__btn">
+              <PhGuitar :size="18" weight="light" />
+            </span>
+            <span class="hint__cap">Табы</span>
+          </div>
+          <p>
+            Схема на грифе не складывается? Включи табы в настройках: гитара в первой позиции или
+            пианино. Под карточкой появится раскладка.
+          </p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="legend">
+      <h2>Цвета</h2>
+      <dl class="legend__row">
+        <div>
+          <dt><span class="swatch swatch--tone" /> Тон</dt>
+          <dd>Жёлтый · два полутона, на гитаре через лад</dd>
+        </div>
+        <div>
+          <dt><span class="swatch swatch--semi" /> Полутон</dt>
+          <dd>Зелёный · соседний лад</dd>
+        </div>
+        <div>
+          <dt><span class="swatch swatch--tc" /> Тон связующий</dt>
+          <dd>Серый · стык двух схем, тоже тон</dd>
+        </div>
+      </dl>
     </section>
 
     <section id="positions" class="positions">
-      <h2>Три позиции схемы</h2>
+      <h2>Три схемы</h2>
       <p class="positions__lead">
-        Их можно комбинировать и собирать лад. Между схемами стоит связующая нота: тон
-        связующий, ТС.
+        В тренировке только эти три. Их пары через ТС и есть случайная выдача.
       </p>
       <ol class="positions__list">
         <li v-for="(pos, i) in positions" :key="pos.title" class="pos">
@@ -85,57 +183,97 @@ const demoPattern = computed(() =>
       </ol>
     </section>
 
-    <section class="legend">
-      <h2>Цвета в тренировке</h2>
-      <dl class="legend__row">
-        <div>
-          <dt><span class="swatch swatch--tone" /> Тон</dt>
-          <dd>Жёлтый</dd>
+    <section class="names">
+      <h2>Когда у лада есть имя</h2>
+      <p>
+        Если пара схем совпадает с диатоническим ладом, под карточкой пишется название. Остальные
+        комбинации безымянные — их всё равно играют.
+      </p>
+      <ul class="names__list">
+        <li v-for="entry in PRACTICABLE_MODES" :key="entry.id">
+          <strong>{{ namedModeTitle(entry) }}</strong>
+          <span>
+            {{ schemeName(entry.mode.first) }}
+            · ТС ·
+            {{ schemeName(entry.mode.second) }}
+          </span>
+        </li>
+      </ul>
+      <p class="names__note">
+        Лидийский и локрийский сюда не попадают: им нужна схема тон–тон–тон, её в выдаче нет.
+      </p>
+      <aside class="hint">
+        <div class="hint__core">
+          <div class="hint__sw" aria-hidden="true">
+            <span class="hint__btn">
+              <PhTextT :size="18" weight="light" />
+            </span>
+            <span class="hint__cap">Отображение лада</span>
+          </div>
+          <p>
+            Названия уже знаешь и хочешь играть вслепую? Выключи эту кнопку в настройках игры.
+            Под карточкой останется схема, без подписи.
+          </p>
         </div>
-        <div>
-          <dt><span class="swatch swatch--semi" /> Полутон</dt>
-          <dd>Зелёный</dd>
-        </div>
-        <div>
-          <dt><span class="swatch swatch--tc" /> Тон связующий</dt>
-          <dd>Серый</dd>
-        </div>
-      </dl>
+      </aside>
     </section>
 
     <section class="mirror">
       <div class="bezel bezel--wide">
         <div class="bezel__core bezel__core--mirror">
-          <h2>Вверх и вниз зеркально</h2>
+          <h2>Вверх и вниз — одна схема</h2>
           <p>
-            Схему играют от ноты в обе стороны. Нисходящий ход - это восходящий, прочитанный
-            наоборот.
+            Карточка показывает интервалы вверх. Вниз — тот же ряд задом наперёд. Переключи, чтобы
+            увидеть.
           </p>
-          <div class="mirror__pair">
-            <figure>
-              <figcaption>Схема 1 вверх</figcaption>
-              <IntervalScheme :pattern="positions[0]!.pattern" />
-            </figure>
-            <figure>
-              <figcaption>Та же схема вниз</figcaption>
-              <IntervalScheme :pattern="positions[0]!.pattern" reverse />
-            </figure>
+          <div class="hero__toggle">
+            <button type="button" class="dir" :aria-pressed="goingUp" @click="goingUp = true">
+              Вверх
+            </button>
+            <button type="button" class="dir" :aria-pressed="!goingUp" @click="goingUp = false">
+              Вниз
+            </button>
+          </div>
+          <div class="mirror__live">
+            <p class="mirror__kicker">Схема 1, {{ goingUp ? 'вверх' : 'вниз' }}</p>
+            <IntervalScheme :pattern="demoPattern" />
           </div>
         </div>
       </div>
     </section>
 
-    <section class="join">
-      <h2>Как схемы становятся ладом</h2>
-      <p>
-        Две схемы стыкуются серым ТС. Связующий тон не ломает кварту каждой схемы, он
-        склеивает их в один ход.
-      </p>
-      <div class="join__track" aria-label="Две схемы и связующий тон">
-        <IntervalScheme :pattern="positions[0]!.pattern" :show-degrees="false" />
-        <span class="swatch swatch--tc swatch--lg" title="Тон связующий" />
-        <IntervalScheme :pattern="positions[1]!.pattern" :show-degrees="false" />
-      </div>
+    <section class="gear">
+      <h2>Что крутить в игре</h2>
+      <dl class="gear__list">
+        <div>
+          <dt>Ритм</dt>
+          <dd>
+            Темп, размер такта, метроном. Клики можно выключить — схемы всё равно сменяются по
+            пульсу.
+          </dd>
+        </div>
+        <div>
+          <dt>Упражнение</dt>
+          <dd>
+            Как часто менять лад. Табы: нет, гитара в первой позиции, пианино. Кнопка «Отображение
+            лада» прячет название под карточкой.
+          </dd>
+        </div>
+        <div>
+          <dt>Звук</dt>
+          <dd>Одна тональность на мелодию и бэк. Мелодия — восемь нот лада за такт.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="closer">
+      <p class="closer__line">Дальше только гриф.</p>
+      <RouterLink to="/play" class="cta">
+        Играть
+        <span class="cta__icon" aria-hidden="true">
+          <PhArrowUpRight :size="16" weight="light" />
+        </span>
+      </RouterLink>
     </section>
   </main>
 </template>
@@ -159,15 +297,24 @@ const demoPattern = computed(() =>
 
 @media (min-width: 768px) {
   .hero {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: 4rem;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 3.5rem;
     padding-top: 3rem;
   }
 }
 
+.kicker {
+  margin: 0 0 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .hero__title {
   margin: 0 0 0.85rem;
-  font-size: clamp(2.25rem, 6vw, 4.25rem);
+  font-size: clamp(2.1rem, 5.4vw, 3.7rem);
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -176,10 +323,11 @@ const demoPattern = computed(() =>
 
 .hero__lead {
   margin: 0 0 1.75rem;
-  max-width: 36ch;
+  max-width: 38ch;
   color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .cta {
@@ -225,50 +373,6 @@ const demoPattern = computed(() =>
   transition: transform 420ms var(--ease);
 }
 
-.hero__stage-kicker {
-  margin: 0 0 1.1rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.hero__toggle {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1.4rem;
-}
-
-.dir {
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  transition:
-    background 420ms var(--ease),
-    color 420ms var(--ease),
-    transform 280ms var(--ease);
-}
-
-.dir:hover {
-  color: var(--ink);
-}
-
-.dir:active {
-  transform: scale(0.98);
-}
-
-.dir[aria-pressed='true'] {
-  background: var(--ink);
-  border-color: transparent;
-  color: var(--bg);
-}
-
-.dir:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 .bezel {
   padding: 0.4rem;
   border: 1px solid var(--line);
@@ -283,38 +387,55 @@ const demoPattern = computed(() =>
   box-shadow: inset 0 1px 1px rgb(255 255 255 / 12%);
 }
 
-.bezel--wide .bezel__core--mirror {
-  padding: 2rem 1.5rem 2.2rem;
+.bezel__core--preview {
+  padding: 1rem 0.55rem 2.4rem;
 }
 
-@media (min-width: 768px) {
-  .bezel--wide .bezel__core--mirror {
-    padding: 2.75rem 2.4rem 3rem;
-  }
+.preview {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: center;
+  gap: 0.15rem;
 }
 
+.preview :deep(.mode) {
+  width: 100%;
+}
+
+.preview__split {
+  align-self: stretch;
+  margin: 12% 0;
+  background: color-mix(in srgb, var(--ink) 28%, transparent);
+}
+
+.session,
 .define,
 .positions,
 .legend,
-.join {
+.names,
+.gear {
   padding: 4.5rem 0 1rem;
 }
 
 @media (min-width: 768px) {
+  .session,
   .define,
   .positions,
   .legend,
-  .join,
-  .mirror {
+  .names,
+  .mirror,
+  .gear {
     padding-top: 6.5rem;
   }
 }
 
+.session h2,
 .define h2,
 .positions h2,
 .legend h2,
 .mirror h2,
-.join h2 {
+.names h2,
+.gear h2 {
   margin: 0 0 0.9rem;
   font-size: clamp(1.7rem, 3vw, 2.35rem);
   font-weight: 600;
@@ -326,12 +447,122 @@ const demoPattern = computed(() =>
 .define p,
 .positions__lead,
 .mirror p,
-.join p {
+.names p,
+.names__note {
   margin: 0;
   max-width: 62ch;
   color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.steps {
+  display: grid;
+  gap: 0;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-width: 46rem;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.steps li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.steps h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.steps p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.steps__n {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-top: 0.05rem;
+  border-radius: 0.65rem;
+  background: var(--bg-raised);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.lad {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 2rem;
+  padding-bottom: 2.4rem;
+  max-width: 32rem;
+}
+
+.lad :deep(.mode) {
+  width: 100%;
+}
+
+.legend__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin: 1.5rem 0 0;
+}
+
+@media (min-width: 768px) {
+  .legend__row {
+    grid-template-columns: auto auto auto;
+    justify-content: start;
+    gap: 3rem;
+  }
+}
+
+.legend__row dt {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+}
+
+.legend__row dd {
+  margin: 0.25rem 0 0 1.7rem;
+  color: var(--muted);
+  max-width: 22ch;
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 28%);
+}
+
+.swatch--tone {
+  background: var(--tone);
+}
+
+.swatch--semi {
+  background: var(--semitone);
+}
+
+.swatch--tc {
+  background: var(--tc);
 }
 
 .positions__lead {
@@ -344,6 +575,7 @@ const demoPattern = computed(() =>
   margin: 0;
   padding: 0;
   list-style: none;
+  max-width: 34rem;
 }
 
 .pos {
@@ -384,108 +616,218 @@ const demoPattern = computed(() =>
   font-weight: 600;
 }
 
-.legend__row {
+.names__list {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  margin: 1.5rem 0 0;
+  gap: 0;
+  margin: 1.75rem 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  max-width: 42rem;
 }
 
-@media (min-width: 768px) {
-  .legend__row {
-    grid-template-columns: auto auto auto;
-    justify-content: start;
-    gap: 3rem;
-  }
+.names__list li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--line);
 }
 
-.legend__row dt {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
+.names__list li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.names__list strong {
   font-weight: 600;
 }
 
-.legend__row dd {
-  margin: 0.25rem 0 0 1.7rem;
+.names__list span {
   color: var(--muted);
+  font-size: 0.95rem;
 }
 
-.swatch {
-  display: inline-block;
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 50%;
+.names__note {
+  font-size: 0.95rem;
+}
+
+.hint {
+  margin-top: 1.75rem;
+  max-width: 42rem;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-shell);
+  background: color-mix(in srgb, var(--bg-inset) 70%, transparent);
+}
+
+.lad + .hint {
+  margin-top: 0.35rem;
+}
+
+.hint__core {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.15rem 1.35rem;
+  align-items: center;
+  padding: 1.05rem 1.2rem 1.15rem 1rem;
+  border-radius: var(--radius-core);
+  background: var(--bg-raised);
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 12%);
+}
+
+.hint__sw {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  width: 6.6rem;
+}
+
+.hint__btn {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
   box-shadow: inset 0 1px 1px rgb(255 255 255 / 28%);
 }
 
-.swatch--tone {
-  background: var(--tone);
+.hint__cap {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.2;
 }
 
-.swatch--semi {
-  background: var(--semitone);
+.hint p {
+  margin: 0;
+  max-width: 36ch;
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
-.swatch--tc {
-  background: var(--tc);
-}
-
-.swatch--lg {
-  width: 1.15rem;
-  height: 1.15rem;
-  flex: none;
-}
-
-.mirror__pair {
-  display: grid;
-  gap: 1.75rem;
-  margin-top: 1.75rem;
-}
-
-@media (min-width: 768px) {
-  .mirror__pair {
-    grid-template-columns: 1fr 1fr;
-    gap: 2.5rem;
+@media (max-width: 767px) {
+  .hint__core {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    padding: 1rem 1rem 1.1rem;
   }
 }
 
-.mirror__pair figure {
-  margin: 0;
+.bezel--wide .bezel__core--mirror {
+  padding: 2rem 1.5rem 2.2rem;
 }
 
-.mirror__pair figcaption {
-  margin-bottom: 0.7rem;
-  font-size: 0.92rem;
+@media (min-width: 768px) {
+  .bezel--wide .bezel__core--mirror {
+    padding: 2.75rem 2.4rem 3rem;
+  }
+}
+
+.hero__toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+}
+
+.dir {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 420ms var(--ease),
+    color 420ms var(--ease),
+    transform 280ms var(--ease);
+}
+
+.dir:hover {
+  color: var(--ink);
+}
+
+.dir:active {
+  transform: scale(0.98);
+}
+
+.dir[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: transparent;
+  color: var(--bg);
+}
+
+.dir:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mirror__live {
+  margin-top: 1.6rem;
+}
+
+.mirror__kicker {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.gear__list {
+  display: grid;
+  gap: 0;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  max-width: 46rem;
+}
+
+.gear__list > div {
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.gear__list > div:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.gear__list dt {
+  margin: 0 0 0.3rem;
   font-weight: 600;
 }
 
-.join__track {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 0.75rem;
-  align-items: center;
-  margin-top: 2rem;
-  padding: 1.4rem 1rem;
-  border-radius: var(--radius-core);
-  background: var(--bg-raised);
+.gear__list dd {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 
-@media (min-width: 768px) {
-  .join__track {
-    gap: 1.25rem;
-    padding: 1.8rem 1.6rem;
-  }
+.closer {
+  padding: 5rem 0 1rem;
+}
+
+.closer__line {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .hero__copy,
   .hero__stage,
+  .session,
   .define,
-  .positions,
   .legend,
+  .positions,
+  .names,
   .mirror,
-  .join {
+  .gear,
+  .closer {
     animation: rise 900ms var(--ease) both;
     animation-timeline: view();
     animation-range: entry 0% entry 35%;
@@ -509,6 +851,16 @@ const demoPattern = computed(() =>
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .preview {
+    gap: 0;
+  }
+
+  .preview :deep(.mode__caption) {
+    font-size: 0.62rem;
   }
 }
 </style>

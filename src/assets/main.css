@@ -1,4 +1,4 @@
-/* z-index: grain 10, nav 20, skip 30 */
+/* z-index: mode backdrop 1, play chrome 2, grain 10, nav 20, skip 30 */
 
 :root {
   color-scheme: dark;
@@ -84,6 +84,21 @@ a {
 button,
 input {
   font-family: inherit;
+}
+
+.ctrl-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ctrl-title svg {
+  flex: 0 0 auto;
 }
 
 .skip-link {

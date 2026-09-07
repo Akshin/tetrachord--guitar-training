@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { PhGauge } from '@phosphor-icons/vue'
 import { BPM_DEFAULT, BPM_MAX, BPM_MIN, clampBpm } from '../audio/metronome'
 
 /** Visual dial sweep: hard left → hard right. */
@@ -16,9 +17,11 @@ const TAP_HISTORY = 8
 const props = withDefaults(
   defineProps<{
     modelValue?: number
+    compact?: boolean
   }>(),
   {
     modelValue: BPM_DEFAULT,
+    compact: false,
   },
 )
 
@@ -124,8 +127,11 @@ function onInputChange(event: Event) {
 </script>
 
 <template>
-  <div class="bpm-control" role="group" aria-label="BPM">
-    <label class="bpm-control__label" for="bpm-input">BPM</label>
+  <div class="bpm-control" :class="{ 'bpm-control--compact': compact }" role="group" aria-label="BPM">
+    <label class="bpm-control__label ctrl-title" for="bpm-input">
+      <PhGauge :size="14" weight="light" aria-hidden="true" />
+      BPM
+    </label>
     <input
       id="bpm-input"
       class="bpm-control__input"
@@ -160,10 +166,11 @@ function onInputChange(event: Event) {
       >
         <span class="bpm-control__pointer" />
       </span>
-      <span class="bpm-control__hint">tap</span>
+      <span class="bpm-control__value" aria-hidden="true">{{ bpm }}</span>
+      <span v-if="!compact" class="bpm-control__hint">tap</span>
     </button>
 
-    <p class="bpm-control__range">{{ BPM_MIN }}–{{ BPM_MAX }}</p>
+    <p v-if="!compact" class="bpm-control__range">{{ BPM_MIN }}–{{ BPM_MAX }}</p>
   </div>
 </template>
 
@@ -174,16 +181,13 @@ function onInputChange(event: Event) {
   align-items: center;
   gap: 0.5rem;
   width: max-content;
+  max-width: 100%;
   color: var(--ink);
   user-select: none;
 }
 
 .bpm-control__label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
+  z-index: 1;
 }
 
 .bpm-control__input {
@@ -273,7 +277,12 @@ function onInputChange(event: Event) {
   inset: 0.7rem;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: var(--bg-raised);
+  background:
+    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 10%), transparent 42%),
+    var(--bg-raised);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 12%),
+    inset 0 -10px 18px rgb(8 10 14 / 22%);
   transition:
     transform 40ms linear,
     border-color 280ms var(--ease),
@@ -301,6 +310,26 @@ function onInputChange(event: Event) {
   transform: translateX(-50%);
 }
 
+.bpm-control__range {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.bpm-control__value {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  pointer-events: none;
+}
+
 .bpm-control__hint {
   position: relative;
   z-index: 1;
@@ -313,10 +342,28 @@ function onInputChange(event: Event) {
   pointer-events: none;
 }
 
-.bpm-control__range {
+.bpm-control--compact {
+  gap: 0.4rem;
+}
+
+.bpm-control--compact .bpm-control__input {
+  width: 3.6rem;
+  padding: 0.28rem 0.3rem;
+  font-size: 1.05rem;
+  border-radius: 0.55rem;
+}
+
+.bpm-control--compact .bpm-control__knob {
+  --knob-size: 5.35rem;
+
   margin: 0;
-  font-size: 0.7rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+}
+
+.bpm-control--compact .bpm-control__knob:focus-visible {
+  outline-offset: 2px;
+}
+
+.bpm-control--compact .bpm-control__value {
+  font-size: 1.02rem;
 }
 </style>
