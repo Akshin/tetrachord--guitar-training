@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { PhArrowUpRight, PhGuitar, PhTextT } from '@phosphor-icons/vue'
-import IntervalScheme from '@/components/IntervalScheme.vue'
+import IntervalScheme, { type IntervalKind as StepKind } from '@/components/IntervalScheme.vue'
 import ModeScheme from '@/components/ModeScheme.vue'
 import {
   namedModeTitle,
@@ -18,7 +18,9 @@ import {
 } from '@/training/patterns'
 import { BEATS_DEFAULT, BPM_DEFAULT, secondsPerBeat } from '@/audio/metronome'
 
-const positions: { title: string; pattern: SchemePattern }[] = [
+type PracticeScheme = readonly [StepKind, StepKind, StepKind]
+
+const positions: { title: string; pattern: PracticeScheme }[] = [
   { title: 'Тон — тон — полутон', pattern: SCHEME_TTS },
   { title: 'Тон — полутон — тон', pattern: SCHEME_TST },
   { title: 'Полутон — тон — тон', pattern: SCHEME_STT },
@@ -28,9 +30,10 @@ const ionian = PRACTICABLE_MODES.find((entry) => entry.id === 'ionian')!
 const dorian = PRACTICABLE_MODES.find((entry) => entry.id === 'dorian')!
 
 const goingUp = ref(true)
-const demoPattern = computed(() =>
-  goingUp.value ? positions[0]!.pattern : [...positions[0]!.pattern].reverse(),
-)
+const demoPattern = computed((): StepKind[] => {
+  const steps = [...positions[0]!.pattern]
+  return goingUp.value ? steps : [...steps].reverse()
+})
 
 function schemeName(pattern: SchemePattern): string {
   return pattern.map((kind) => (kind === 'semitone' ? 'полутон' : 'тон')).join(' — ')
@@ -182,7 +185,7 @@ const demoCountdown = `${(secondsPerBeat(BPM_DEFAULT) * BEATS_DEFAULT * CHANGE_E
           <span class="pos__n">{{ schemeId(pos.pattern) }}</span>
           <div class="pos__body">
             <h3>{{ pos.title }}</h3>
-            <IntervalScheme :pattern="[...pos.pattern]" />
+            <IntervalScheme :pattern="pos.pattern" />
           </div>
         </li>
       </ol>

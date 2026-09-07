@@ -3,7 +3,7 @@ export type IntervalKind = 'tone' | 'semitone'
 
 withDefaults(
   defineProps<{
-    pattern: IntervalKind[]
+    pattern: readonly IntervalKind[]
     reverse?: boolean
     showDegrees?: boolean
   }>(),
