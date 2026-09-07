@@ -6,12 +6,19 @@ import {
   type ChangeEvery,
   type ModePattern,
 } from '@/training/patterns'
+import { TAB_INSTRUMENT_DEFAULT, type TabInstrument } from '@/training/tabs'
 
-const props = defineProps<{
-  playing: boolean
-  changeEvery: ChangeEvery
-  downbeatSeq: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    playing: boolean
+    changeEvery: ChangeEvery
+    downbeatSeq: number
+    tabInstrument?: TabInstrument
+  }>(),
+  {
+    tabInstrument: TAB_INSTRUMENT_DEFAULT,
+  },
+)
 
 const emit = defineEmits<{
   'update:mode': [mode: ModePattern]
@@ -208,13 +215,23 @@ onUnmounted(() => {
           'stage__pane--snap': leftSnap,
         }"
       >
-        <ModeScheme :mode="leftMode" caption="Сейчас" :motion="false" />
+        <ModeScheme
+          :mode="leftMode"
+          caption="Сейчас"
+          :motion="false"
+          :tab-instrument="tabInstrument"
+        />
       </article>
       <article
         class="stage__pane stage__pane--right"
         :class="{ 'stage__pane--enter': sliding }"
       >
-        <ModeScheme :mode="rightMode" caption="Дальше" quiet />
+        <ModeScheme
+          :mode="rightMode"
+          caption="Дальше"
+          quiet
+          :tab-instrument="tabInstrument"
+        />
       </article>
 
       <div
@@ -232,6 +249,7 @@ onUnmounted(() => {
           caption="Сейчас"
           :quiet="flyerPhase === 'start'"
           :lifted="flyerPhase === 'lift' || flyerPhase === 'go'"
+          :tab-instrument="tabInstrument"
         />
       </div>
 
@@ -255,7 +273,7 @@ onUnmounted(() => {
   align-items: center;
   overflow: hidden;
   flex: 1 1 auto;
-  min-height: 11rem;
+  min-height: 18rem;
 }
 
 .stage__pane {
@@ -349,7 +367,7 @@ onUnmounted(() => {
 
 @media (max-width: 767px) {
   .stage__viewport {
-    min-height: 14rem;
+    min-height: 22rem;
   }
 
   .stage__pane,

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import SchemeCircle from '@/components/SchemeCircle.vue'
+import PianoHelper from '@/components/PianoHelper.vue'
+import TabHelper from '@/components/TabHelper.vue'
 import { findNamedMode, namedModeTitle } from '@/training/modes'
 import { modeLabel, type ModePattern, type SchemePattern } from '@/training/patterns'
+import { TAB_INSTRUMENT_DEFAULT, type TabInstrument } from '@/training/tabs'
 
 const props = withDefaults(
   defineProps<{
@@ -14,10 +17,12 @@ const props = withDefaults(
     motion?: boolean
     /** Show diatonic mode name under the card when the pair matches. */
     showModeName?: boolean
+    tabInstrument?: TabInstrument
   }>(),
   {
     motion: true,
     showModeName: true,
+    tabInstrument: TAB_INSTRUMENT_DEFAULT,
   },
 )
 
@@ -61,6 +66,9 @@ function schemeKey(pattern: SchemePattern, side: string): string {
         </div>
       </div>
     </div>
+
+    <PianoHelper v-if="tabInstrument === 'piano'" class="mode__tab" :mode="mode" />
+    <TabHelper v-else-if="tabInstrument === 'guitar'" class="mode__tab" :mode="mode" />
 
     <p v-if="showModeName && namedTitle" class="mode__name">{{ namedTitle }}</p>
   </article>
@@ -167,8 +175,17 @@ function schemeKey(pattern: SchemePattern, side: string): string {
   width: 1.7rem;
 }
 
+.mode__tab {
+  margin-top: 0.55rem;
+  opacity: 0.62;
+}
+
+.mode--quiet .mode__tab {
+  opacity: 1;
+}
+
 .mode__name {
-  margin: 0.65rem 0 0;
+  margin: 0.5rem 0 0;
   color: var(--ink);
   font-size: 0.82rem;
   font-weight: 600;

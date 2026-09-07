@@ -11,10 +11,12 @@ import MelodyToggle from '@/components/MelodyToggle.vue'
 import MetronomeToggle from '@/components/MetronomeToggle.vue'
 import PlayTransport from '@/components/PlayTransport.vue'
 import SchemeChangeControl from '@/components/SchemeChangeControl.vue'
+import TabInstrumentControl from '@/components/TabInstrumentControl.vue'
 import TimeSignatureControl from '@/components/TimeSignatureControl.vue'
 import TrainingStage from '@/components/TrainingStage.vue'
 import { useMetronomeStore } from '@/stores/metronome'
 import { CHANGE_EVERY_DEFAULT, type ChangeEvery, type ModePattern } from '@/training/patterns'
+import { TAB_INSTRUMENT_DEFAULT, type TabInstrument } from '@/training/tabs'
 
 const store = useMetronomeStore()
 const { bpm, beatsPerMeasure } = storeToRefs(store)
@@ -24,6 +26,7 @@ const metronomeOn = ref(true)
 const backingOn = ref(false)
 const trackKey = ref<TrackKey>(TRACK_KEY_DEFAULT)
 const changeEvery = ref<ChangeEvery>(CHANGE_EVERY_DEFAULT)
+const tabInstrument = ref<TabInstrument>(TAB_INSTRUMENT_DEFAULT)
 const downbeatSeq = ref(0)
 const soundingMode = ref<ModePattern | null>(null)
 
@@ -79,6 +82,7 @@ onUnmounted(() => {
       :playing="playing"
       :change-every="changeEvery"
       :downbeat-seq="downbeatSeq"
+      :tab-instrument="tabInstrument"
       @update:mode="soundingMode = $event"
     />
 
@@ -86,6 +90,7 @@ onUnmounted(() => {
       <BpmControl v-model="bpm" />
       <TimeSignatureControl v-model="beatsPerMeasure" />
       <SchemeChangeControl v-model="changeEvery" />
+      <TabInstrumentControl v-model="tabInstrument" />
       <MetronomeToggle v-model="metronomeOn" />
       <MelodyToggle v-model="melodyOn" />
       <BackingTrackToggle v-model="backingOn" />
